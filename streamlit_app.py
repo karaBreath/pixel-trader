@@ -370,7 +370,7 @@ def detail(ticker):
 
 
 # ===================== UI =====================
-st.set_page_config(page_title="Pixel Trader Agent", page_icon="👾", layout="wide")
+st.set_page_config(page_title="Pixel Trader Agent By Kara", page_icon="👾", layout="wide")
 
 st.markdown("""
 <style>
@@ -387,7 +387,7 @@ section[data-testid="stSidebar"] { background: #1a0938; border-right: 3px solid 
 </style>
 """, unsafe_allow_html=True)
 
-st.markdown("# 👾 PIXEL TRADER AGENT")
+st.markdown("# 👾 PIXEL TRADER AGENT By Kara")
 st.markdown("<div class='big'>ผู้ช่วยร่อนหุ้น/คริปโต/ทอง — ฟรี ไม่ใช้ API key 🕹️</div>",
             unsafe_allow_html=True)
 st.write("")
