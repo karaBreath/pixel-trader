@@ -102,6 +102,28 @@ def run_claude(prompt, timeout=300):
         return None
 
 
+def _get_secret(name):
+    """อ่าน secret อย่างปลอดภัย (ไม่พังถ้าไม่มีไฟล์ secrets)"""
+    try:
+        return st.secrets.get(name)
+    except Exception:
+        return None
+
+
+def call_gemini(prompt):
+    """เรียก Google Gemini (free tier) — ใช้ st.secrets['GEMINI_API_KEY'] บนคลาวด์"""
+    key = _get_secret("GEMINI_API_KEY")
+    if not key:
+        return None
+    try:
+        from google import genai
+        client = genai.Client(api_key=key)
+        resp = client.models.generate_content(model="gemini-2.5-flash", contents=prompt)
+        return (resp.text or "").strip() or None
+    except Exception:
+        return None
+
+
 def rule_based_analysis(ticker, d):
     """สรุปอัตโนมัติจากตัวเลข (ไม่ใช้ AI) — ใช้บนคลาวด์/เครื่องที่ไม่มี Claude"""
     hist, info = d["hist"], d["info"]
@@ -443,17 +465,27 @@ else:  # ดูรายตัว
             st.markdown("---")
             st.markdown("### 🧠 วิเคราะห์เชิงลึกด้วย AI (หลายมุม)")
             st.caption("กดปุ่มแล้ว AI จะคิดให้ในเว็บเลย ฟรี (ใช้ Claude Code เดิม) ~30-90 วินาที")
-            has_ai = shutil.which("claude") is not None
+            has_claude = shutil.which("claude") is not None
+            has_gemini = _get_secret("GEMINI_API_KEY") is not None
+            has_ai = has_claude or has_gemini
             label = "🚀 วิเคราะห์เชิงลึก (AI จริง)" if has_ai else "🚀 วิเคราะห์เชิงลึก (สรุปอัตโนมัติ)"
             if st.button(label):
-                if has_ai:
-                    with st.spinner("🤖 AI กำลังวิเคราะห์ 4 มุมมอง... รอ ~30-90 วินาที"):
-                        report = run_claude(build_deep_prompt(ticker, d))
-                    if not report:
-                        report = rule_based_analysis(ticker, d)
-                else:
+                report = None
+                src = ""
+                prompt = build_deep_prompt(ticker, d)
+                if has_claude:
+                    with st.spinner("🤖 Claude กำลังวิเคราะห์ 4 มุมมอง... ~30-90 วินาที"):
+                        report = run_claude(prompt)
+                    src = "🤖 วิเคราะห์โดย Claude"
+                if not report and has_gemini:
+                    with st.spinner("🤖 Gemini กำลังวิเคราะห์ 4 มุมมอง..."):
+                        report = call_gemini(prompt)
+                    src = "🤖 วิเคราะห์โดย Google Gemini (ฟรี)"
+                if not report:
                     with st.spinner("📊 กำลังสรุปจากตัวเลข..."):
                         report = rule_based_analysis(ticker, d)
+                    src = "📊 สรุปอัตโนมัติ (ไม่มี AI — ใส่ GEMINI_API_KEY เพื่อให้ AI คิดจริง)"
+                st.caption(src)
                 st.markdown("<div class='pixel-box'>", unsafe_allow_html=True)
                 st.markdown(report)
                 st.markdown("</div>", unsafe_allow_html=True)

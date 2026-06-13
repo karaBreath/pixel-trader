@@ -4,3 +4,4 @@ stockstats>=0.6
 pandas>=2.0
 numpy>=1.26
 deep-translator>=1.11
+google-genai>=1.0
