@@ -399,6 +399,14 @@ _views = ["🔎 ร่อนหาหุ้น", "🔬 ดูรายตัว"
 mode = st.sidebar.radio("เลือกโหมด", _views, index=_views.index(st.session_state["view"]))
 st.session_state["view"] = mode
 st.sidebar.markdown("---")
+# 🧠 สถานะสมอง AI — บอกชัดว่าตอนนี้ใช้ AI จริงหรือ rule-based
+if shutil.which("claude"):
+    st.sidebar.success("🧠 สมอง AI: **Claude** (เครื่องนี้) ✅")
+elif _get_secret("GEMINI_API_KEY"):
+    st.sidebar.success("🧠 สมอง AI: **Google Gemini** (คลาวด์) ✅ คิดด้วย AI จริง")
+else:
+    st.sidebar.warning("🧠 ยังไม่มี AI — ใช้สรุปอัตโนมัติ (rule-based)\n\nใส่ GEMINI_API_KEY ใน Secrets เพื่อเปิด AI")
+st.sidebar.markdown("---")
 st.sidebar.caption("💡 กดชื่อหุ้นในตารางร่อน → เด้งไปดูรายตัว + วิเคราะห์ได้เลย")
 
 if mode == "🔎 ร่อนหาหุ้น":
