@@ -25,6 +25,12 @@ from stockstats import wrap as ss_wrap
 
 from patterns import technical_report_th
 
+try:
+    from deep_translator import GoogleTranslator
+    _HAS_TR = True
+except Exception:
+    _HAS_TR = False
+
 
 def build_deep_prompt(ticker, d):
     """ประกอบ prompt ส่งให้ Claude วิเคราะห์เชิงลึกหลายมุม"""
@@ -277,6 +283,17 @@ def composite(scores, w):
     return round((num / den) if den else (scores.get("trend") or 0), 1)
 
 
+@st.cache_data(ttl=86400, show_spinner=False)
+def to_thai(text):
+    """แปลข้อความเป็นไทย (ฟรี) — cache 1 วัน, แปลไม่ได้คืนต้นฉบับ"""
+    if not text or not _HAS_TR:
+        return text
+    try:
+        return GoogleTranslator(source="auto", target="th").translate(text[:480]) or text
+    except Exception:
+        return text
+
+
 @st.cache_data(ttl=900, show_spinner=False)
 def detail(ticker):
     """ข้อมูลเจาะลึก 1 ตัว สำหรับหน้ารายตัว"""
@@ -419,7 +436,7 @@ else:  # ดูรายตัว
                 title = c.get("title") or it.get("title")
                 if title:
                     cnt += 1
-                    st.write(f"{cnt}. {title}")
+                    st.write(f"{cnt}. {to_thai(title)}")
             if cnt == 0:
                 st.caption("ไม่พบข่าว")
 
