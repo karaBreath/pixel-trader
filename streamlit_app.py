@@ -19,6 +19,7 @@ from concurrent.futures import ThreadPoolExecutor
 warnings.filterwarnings("ignore")
 
 import pandas as pd
+import plotly.graph_objects as go
 import streamlit as st
 import yfinance as yf
 from stockstats import wrap as ss_wrap
@@ -100,6 +101,43 @@ def run_claude(prompt, timeout=300):
         return r.stdout.strip() or None
     except Exception:
         return None
+
+
+def reco_gauge(sellness):
+    """วาดหน้าปัดแบบมาตรวัดรถ — ซ้าย=ซื้อ กลาง=ถือ ขวา=ขาย (เข็มชี้ที่ sellness 0-100)"""
+    fig = go.Figure(go.Indicator(
+        mode="gauge",
+        value=sellness,
+        gauge={
+            "axis": {"range": [0, 100], "tickvals": [10, 50, 90],
+                     "ticktext": ["ซื้อ", "ถือ", "ขาย"],
+                     "tickfont": {"size": 18, "color": "#e0e0ff"}},
+            "bar": {"color": "rgba(0,0,0,0)"},  # ซ่อนแถบ ใช้เข็มแทน
+            "borderwidth": 0,
+            "steps": [
+                {"range": [0, 33], "color": "#2ecc71"},    # เขียว = ซื้อ
+                {"range": [33, 66], "color": "#f1c40f"},    # เหลือง = ถือ
+                {"range": [66, 100], "color": "#e74c3c"},   # แดง = ขาย
+            ],
+            "threshold": {"line": {"color": "#ffffff", "width": 7},
+                          "thickness": 1, "value": sellness},
+        },
+    ))
+    fig.update_layout(height=250, margin=dict(t=20, b=10, l=40, r=40),
+                      paper_bgcolor="rgba(0,0,0,0)", font={"color": "#e0e0ff"})
+    return fig
+
+
+def gauge_label(sellness):
+    if sellness < 30:
+        return "🟢 ซื้อ / ทยอยสะสม"
+    if sellness < 45:
+        return "🟢 เอนไปทางซื้อ"
+    if sellness < 55:
+        return "🟡 ถือ / รอจังหวะ"
+    if sellness < 70:
+        return "🟠 ระวัง / ทยอยลดได้"
+    return "🔴 ขาย / หลีกเลี่ยง"
 
 
 def _get_secret(name):
@@ -409,6 +447,21 @@ else:  # ดูรายตัว
             m[2].metric("52สัปดาห์ ต่ำ", f"{hist['Close'].min():,.2f}")
             pe = info.get("trailingPE")
             m[3].metric("P/E", f"{pe:,.1f}" if pe else "—")
+
+            # 🚦 หน้าปัดมาตรวัด ซื้อ-ถือ-ขาย (จากสัญญาณรวม เทคนิค+พื้นฐาน)
+            a = analyze(ticker)
+            if a:
+                comp = composite(a["scores"], STYLE_WEIGHTS["สมดุล"])
+                sellness = max(0, min(100, 100 - comp))
+                st.markdown("### 🚦 มาตรวัดสัญญาณ (ซ้าย=ซื้อ · กลาง=ถือ · ขวา=ขาย)")
+                gc1, gc2 = st.columns([3, 2])
+                gc1.plotly_chart(reco_gauge(sellness), use_container_width=True)
+                gc2.markdown(f"<div class='pixel-box' style='margin-top:40px'>"
+                             f"<div class='big'>คำตัดสินเร็ว:</div>"
+                             f"<h3 style='margin:6px 0'>{gauge_label(sellness)}</h3>"
+                             f"<div class='big'>คะแนนรวม {comp:.0f}/100</div></div>",
+                             unsafe_allow_html=True)
+                st.caption("มาตรวัดนี้คิดจากตัวเลขอัตโนมัติ · กดปุ่ม 'วิเคราะห์เชิงลึก' ด้านล่างเพื่อให้ AI วิเคราะห์ละเอียด")
 
             # กราฟราคา + เส้นค่าเฉลี่ย
             chart = pd.DataFrame({"ราคา": hist["Close"]})

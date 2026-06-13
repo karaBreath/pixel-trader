@@ -5,3 +5,4 @@ pandas>=2.0
 numpy>=1.26
 deep-translator>=1.11
 google-genai>=1.0
+plotly>=5.20
