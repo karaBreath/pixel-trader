@@ -23,6 +23,8 @@ import streamlit as st
 import yfinance as yf
 from stockstats import wrap as ss_wrap
 
+from patterns import technical_report_th
+
 
 def build_deep_prompt(ticker, d):
     """ประกอบ prompt ส่งให้ Claude วิเคราะห์เชิงลึกหลายมุม"""
@@ -60,6 +62,9 @@ def build_deep_prompt(ticker, d):
 - EPS={f(info.get('trailingEps'))} อัตรากำไรสุทธิ={f(info.get('profitMargins'))} ROE={f(info.get('returnOnEquity'))}
 - การเติบโตรายได้={f(info.get('revenueGrowth'))} หนี้/ทุน={f(info.get('debtToEquity'))}
 - เป้านักวิเคราะห์={f(info.get('targetMeanPrice'))} คำแนะนำ={f(info.get('recommendationKey'))}
+
+[สัญญาณเทคนิคขั้นสูง]
+{technical_report_th(hist)}
 
 [ข่าวล่าสุด]
 {news_txt}
@@ -398,6 +403,14 @@ else:  # ดูรายตัว
                         "คำแนะนำ": info.get("recommendationKey", "—"),
                     }
                 }))
+
+            st.markdown("### 🕯️ สัญญาณเทคนิคขั้นสูง (แท่งเทียน + กลยุทธ์ + สภาวะตลาด)")
+            try:
+                st.markdown("<div class='pixel-box'>", unsafe_allow_html=True)
+                st.markdown(technical_report_th(hist))
+                st.markdown("</div>", unsafe_allow_html=True)
+            except Exception as e:
+                st.caption(f"คำนวณสัญญาณขั้นสูงไม่ได้: {e}")
 
             st.markdown("**📰 ข่าวล่าสุด**")
             cnt = 0
