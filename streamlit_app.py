@@ -441,6 +441,7 @@ if mode == "🔎 ร่อนหาหุ้น":
                                   use_container_width=True):
                 st.session_state["sel_ticker"] = r["ticker"]
                 st.session_state["view"] = "🔬 ดูรายตัว"
+                st.session_state["auto_analyze"] = True  # วิเคราะห์ AI อัตโนมัติทันที
                 st.rerun()
 
 else:  # ดูรายตัว
@@ -540,7 +541,10 @@ else:  # ดูรายตัว
             has_gemini = _get_secret("GEMINI_API_KEY") is not None
             has_ai = has_claude or has_gemini
             label = "🚀 วิเคราะห์เชิงลึก (AI จริง)" if has_ai else "🚀 วิเคราะห์เชิงลึก (สรุปอัตโนมัติ)"
-            if st.button(label):
+            auto = st.session_state.pop("auto_analyze", False)
+            if auto:
+                st.info(f"⚡ กำลังวิเคราะห์ {ticker} อัตโนมัติ...")
+            if st.button(label) or auto:
                 report = None
                 src = ""
                 prompt = build_deep_prompt(ticker, d)
